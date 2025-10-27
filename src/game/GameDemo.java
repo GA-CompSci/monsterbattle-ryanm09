@@ -54,7 +54,8 @@ public class GameDemo {
      */
     private void setupGame() {
         // Create the GUI
-        gui = new MonsterBattleGUI("Monster Battle - DEMO");
+        gui = new MonsterBattleGUI("Monster Battle - Elite Gamer");
+        gui.displayMessage("Welcome to the Game, Player. You could've been the Hero, Brian.");
         
         // CHOOSE DIFFICULTY (number of monsters to face)
         int numMonsters = chooseDifficulty();
