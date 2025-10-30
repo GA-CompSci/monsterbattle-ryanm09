@@ -23,6 +23,8 @@ public class Game{
     
     // Game state - YOU manage these
     private ArrayList<Monster> monsters;
+    private Monster lastAttacked;
+    private boolean shieldUp = false;
     private ArrayList<Item> inventory;
     private int playerHealth;
     private int playerShield;
@@ -98,7 +100,8 @@ public class Game{
     private void gameLoop() {
         // Keep playing while monsters alive and player alive
         while (countLivingMonsters() > 0 && playerHealth > 0) {
-            
+            shieldUp = false; //start of turn, lower shield
+
             // PLAYER'S TURN
             gui.displayMessage("Your turn! HP: " + playerHealth);
             int action = gui.waitForAction();  // Wait for button click (0-3)
@@ -240,12 +243,13 @@ public class Game{
     private void attackMonster() {
         //TODO Target more intelligently
         Monster target = getRandomLivingMonster();
+        lastAttacked = target;
         int damage = (int)(Math.random() * playerDamage + 1); // 0 - playerDamage
         if(damage == 0){
             //hurt yourself
             playerHealth -= 5;
             gui.displayMessage("Critical MISS! You hit yourself!");
-            gui.updatePlayerHealth(playerHealth);;
+            gui.updatePlayerHealth(playerHealth);
         } else if(damage == playerDamage){
             gui.displayMessage("Critical HIT! You INSTAkilled the monster!");
             target.takeDamage(target.health());
@@ -271,9 +275,8 @@ public class Game{
      * - Something else?
      */
     private void defend() {
-        // TODO: Implement your defend!
-        
-        gui.displayMessage("TODO: Implement defend!");
+        shieldUp = true;
+        gui.displayMessage("Shield raise!");
     }
     
     /**
@@ -307,16 +310,34 @@ public class Game{
     /**
      * Monster attacks player
      * 
-     * TODO: Customize how monsters attack!
      * - How much damage?
      * - Which monster attacks?
      * - Special abilities?
      */
     private void monsterAttack() {
-        // TODO: Implement monster attacks!
-        // Hint: Look at GameDemo.java for an example
-        
-        gui.displayMessage("TODO: Implement monster attack!");
+        // build a list of every mosnter that gets to attack player
+        ArrayList<Monster> attackers = new ArrayList<>();
+        if(lastAttacked.health() > 0 && !attackers.contains(lastAttacked)){
+            attackers.add(lastAttacked);
+        }
+
+        for(Monster m : monsters){
+            double incomingDamage = m.damage();
+
+            if(shieldUp){
+                incomingDamage -= playerShield;
+                gui.displayMessage("You TANKED " + playerShield + " damage");
+            } else {
+                
+            }
+            gui.updatePlayerHealth(playerHealth);
+
+            // Show which one that hit us
+            int index = monsters.indexOf(m);
+            gui.highlightMonster(index);
+            gui.pause(300);
+            gui.highlightMonster(-1);
+        }
     }
     
     // ==================== HELPER METHODS ====================
@@ -349,7 +370,7 @@ public class Game{
     private ArrayList<Monster> getSpeedyMonsters(){
         ArrayList<Monster> speedsters = new ArrayList<>();
         for(Monster m : monsters){
-            if(m.speed() > playerSpeed){
+            if(m.speed() > playerSpeed && m.health() > 0){
             speedsters.add(m);
             }
         }
