@@ -16,6 +16,13 @@ import gui.MonsterBattleGUI;
  * 
  * Run this file to play YOUR game
  */
+
+//TODO: name all the mosnters on spawn with adjectives, such as Strong Ghost or Evil Zombie
+//TODO: Add domain expansions after getting a certain amount of damage, Infinite Void sets all speed to 0 and Malevolent Shrine hits every monster for reduced damage
+//TODO: Balance every stat for every class
+//TODO: If killed a monster leak the damage to the next one
+//TODO: Move Heal to potions, dropped about 50% of the time when monster dies, rework items to ultimate/special move for the player
+
 public class Game{
     
     // The GUI (I had AI build most of this)
@@ -24,7 +31,7 @@ public class Game{
     // Game state - YOU manage these
     private ArrayList<Monster> monsters;
     private Monster lastAttacked;
-    private boolean shieldUp = false;
+    private double shieldPower = 0.0;
     private ArrayList<Item> inventory;
     private int playerHealth;
     private int playerShield;
@@ -100,7 +107,7 @@ public class Game{
     private void gameLoop() {
         // Keep playing while monsters alive and player alive
         while (countLivingMonsters() > 0 && playerHealth > 0) {
-            shieldUp = false; //start of turn, lower shield
+            shieldPower = 0; //start of turn, lower shield
 
             // PLAYER'S TURN
             gui.displayMessage("Your turn! HP: " + playerHealth);
@@ -186,22 +193,31 @@ public class Game{
             gui.displayMessage("You chose Brr Brr! High damage, but weak defense.");
             playerShield -= (int)(Math.random() * 20 + 1) + 5;  // Reduce shield by 5-25
             playerHeal -= (int)(Math.random() * 20 + 1) + 5;   // Reduce heal by 5-25
+
+            playerSpeed -= (int)(Math.random() * 6) + 3;        // Calc speed 6-11
         } else if (choice == 1) {
             // Tank: high shield, low damage and speed
             gui.displayMessage("You chose Chimpanzini! Tough defense, but slow attacks.");
             playerSpeed -= (int)(Math.random() * 9) + 1;        // Reduce speed by 1-9
             playerDamage -= (int)(Math.random() * 20 + 1) + 5;   // Reduce damage by 5-25
+
+            playerSpeed -= (int)(Math.random() * 9) + 1;        // Calc speed 6-11
         } else if (choice == 2) {
             // Healer: high healing, low damage and shield
             gui.displayMessage("You chose Tralelelo! Great recovery, but fragile.");
             playerDamage -= (int)(Math.random() * 21) + 5;      // Reduce damage by 5-25
             playerShield -= (int)(Math.random() * 21) + 5;      // Reduce shield by 5-25
+
+            playerSpeed -= (int)(Math.random() * 10) + 1;        // Calc speed 6-11
         } else {
             // Ninja: high speed, low healing and health
             gui.displayMessage("You chose Crocodilo! Fast and deadly, but risky.");
             playerHeal -= (int)(Math.random() * 46) + 5;        // Reduce heal by 5-50
             playerHealth -= (int)(Math.random() * 21) + 5;         // Reduce max health by 5-25
+
+            playerSpeed -= (int)(Math.random() * 6) + 6;        // Calc speed 6-11
         }
+        if(playerHeal < 0) playerHeal = 0;
 
         gui.setPlayerMaxHealth(playerHealth);
         gui.updatePlayerHealth(playerHealth);
@@ -241,7 +257,6 @@ public class Game{
      * - Special effects?
      */
     private void attackMonster() {
-        //TODO Target more intelligently
         Monster target = getRandomLivingMonster();
         lastAttacked = target;
         int damage = (int)(Math.random() * playerDamage + 1); // 0 - playerDamage
@@ -269,27 +284,21 @@ public class Game{
     /**
      * Defend
      * 
-     * TODO: What does defending do?
      * - Reduce damage?
      * - Block next attack?
      * - Something else?
      */
     private void defend() {
-        shieldUp = true;
+        shieldPower = playerShield;
         gui.displayMessage("Shield raise!");
     }
     
-    /**
-     * Heal yourself
-     * 
-     * TODO: How does healing work?
-     * - How much HP?
-     * - Any limits?
-     */
+
+     // Heal yourself
     private void heal() {
-        // TODO: Implement your heal!
-        
-        gui.displayMessage("TODO: Implement heal!");
+        playerHealth += playerHeal;
+        gui.updatePlayerHealth(playerHealth);
+        gui.displayMessage("You healed for " + playerHeal + " health");
     }
     
     /**
@@ -316,19 +325,21 @@ public class Game{
      */
     private void monsterAttack() {
         // build a list of every mosnter that gets to attack player
-        ArrayList<Monster> attackers = new ArrayList<>();
-        if(lastAttacked.health() > 0 && !attackers.contains(lastAttacked)){
+        ArrayList<Monster> attackers = getSpeedyMonsters();
+        if(lastAttacked != null && lastAttacked.health() > 0 && !attackers.contains(lastAttacked)){
             attackers.add(lastAttacked);
         }
 
-        for(Monster m : monsters){
+        for(Monster m : attackers){
             double incomingDamage = m.damage();
-
-            if(shieldUp){
-                incomingDamage -= playerShield;
-                gui.displayMessage("You TANKED " + playerShield + " damage");
-            } else {
-                
+            if(shieldPower > incomingDamage){
+                double absorbedDamage = incomingDamage;
+                shieldPower -= absorbedDamage;
+                gui.displayMessage("You TANKED " + absorbedDamage + " damage");
+            } else if(incomingDamage > shieldPower){
+                double takenDamage = Math.abs(shieldPower - incomingDamage);
+                playerHealth -= takenDamage;
+                gui.displayMessage("You took " + takenDamage + " damage you bum");
             }
             gui.updatePlayerHealth(playerHealth);
 
@@ -371,7 +382,7 @@ public class Game{
         ArrayList<Monster> speedsters = new ArrayList<>();
         for(Monster m : monsters){
             if(m.speed() > playerSpeed && m.health() > 0){
-            speedsters.add(m);
+                speedsters.add(m);
             }
         }
         return speedsters;
