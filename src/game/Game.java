@@ -18,14 +18,13 @@ import gui.MonsterBattleGUI;
  */
 
 //TODO: name all the mosnters on spawn with adjectives, such as Strong Ghost or Evil Zombie
-//TODO: Add domain expansions after getting a certain amount of damage, Infinite Void sets all speed to 0 and Malevolent Shrine hits every monster for reduced damage
+//TODO: Add domain expansions/specials after getting a certain amount of kills, Infinite Void sets all speed to 0 and Malevolent Shrine hits every monster for reduced damage
 //TODO: Balance every stat for every class
 //TODO: If killed a monster leak the damage to the next one
-//TODO: Move Heal to potions, dropped about 50% of the time when monster dies, rework items to ultimate/special move for the player
 
 public class Game{
     
-    // The GUI (I had AI build most of this)
+    // The GUI
     private MonsterBattleGUI gui;
     
     // Game state - YOU manage these
@@ -38,8 +37,9 @@ public class Game{
     private int playerSpeed;
     private int playerDamage;
     private int playerHeal;
-    private String[] playerSpecial = {"Malevolent Shrine, Heavenly Restriction, Idle Death Gamble, Infinite Void"};
     private boolean playerSpecialAvaliable = false;
+    private int playerClass;
+    private String chosenPlayerSpecial;
     
     /**
      * Main method - start YOUR game!
@@ -90,7 +90,7 @@ public class Game{
         String[] buttons = {"Attack (" + playerDamage + ")",
                             "Defend (" + playerShield + ")",
                             "Heal (" + playerHeal + ")",
-                            "Special (" + playerSpecial + " )"};
+                            chosenPlayerSpecial + " "};
         gui.setActionButtons(buttons);
         
         // Welcome message
@@ -149,37 +149,41 @@ public class Game{
         playerHeal = 50;
         playerSpeed = 10;
         playerHealth = 100;
-        String chosenPlayerSpecial;
+
         
         // Customize stats based on character choice
         if (choice == 0) {
             // Fighter: high damage, low healing and shield
-            gui.displayMessage("You chose Human Monster! High damage, but weak defense.");
+            gui.displayMessage("You chose Human Monster! High damage.");
             playerShield -= (int)(Math.random() * 20 + 1) + 5;  // Reduce shield by 5-25
             playerHeal -= (int)(Math.random() * 20 + 1) + 5;   // Reduce heal by 5-25
             playerSpeed -= (int)(Math.random() * 6) + 3;        // Calc speed 6-11
-            chosenPlayerSpecial = playerSpecial[0];
+            chosenPlayerSpecial = "Malevolent Shrine";
+            playerClass = 0;
         } else if (choice == 1) {
             // Tank: high shield, low damage and speed
-            gui.displayMessage("You chose Heavenly Tank! Tough defense, but low attacks.");
+            gui.displayMessage("You chose Heavenly Tank! Tough defense.");
             playerSpeed -= (int)(Math.random() * 9) + 1;        // Reduce speed by 1-9
             playerDamage -= (int)(Math.random() * 20 + 1) + 5;   // Reduce damage by 5-25
             playerSpeed -= (int)(Math.random() * 9) + 1;        // Calc speed 6-11
-            chosenPlayerSpecial = playerSpecial[1];
+            chosenPlayerSpecial = "Heavenly Restriction";
+            playerClass = 1;
         } else if (choice == 2) {
             // Healer: high healing, low damage and shield
-            gui.displayMessage("You chose Gambler! Great heal, but flimsy.");
+            gui.displayMessage("You chose Gambler! Great heal.");
             playerDamage -= (int)(Math.random() * 21) + 5;      // Reduce damage by 5-25
             playerShield -= (int)(Math.random() * 21) + 5;      // Reduce shield by 5-25
             playerSpeed -= (int)(Math.random() * 10) + 1;        // Calc speed 6-11
-            chosenPlayerSpecial = playerSpecial[2];
+            chosenPlayerSpecial = "Idle Death Gamble";
+            playerClass = 2;
         } else {
             // Ninja: high speed, low healing and health
-            gui.displayMessage("You chose Limitless! Fast and deadly, but flimsy.");
+            gui.displayMessage("You chose Limitless! Speedy.");
             playerHeal -= (int)(Math.random() * 46) + 5;        // Reduce heal by 5-50
             playerHealth -= (int)(Math.random() * 21) + 5;         // Reduce max health by 5-25
             playerSpeed -= (int)(Math.random() * 6) + 6;        // Calc speed 6-11
-            chosenPlayerSpecial = playerSpecial[3];
+            chosenPlayerSpecial = "Infinite Void";
+            playerClass = 3;
         }
         if(playerHeal < 0) playerHeal = 0;
 
@@ -205,7 +209,6 @@ public class Game{
         // Wait for player to click a button (0-3)
         int choice = gui.waitForAction();
         int numMonsters = 0;
-
         switch(choice){
             case 0:
                 numMonsters = (int)(Math.random() * (4 - 2 + 1)) + 2;
@@ -304,9 +307,38 @@ public class Game{
      * Use special ability - each class has unique ability
      */
     private void useSpecial(){
-        if(countDeadMonsters() >= 3) {
+        if(countDeadMonsters() >= 3) {  //unlock special after 3 kills
             playerSpecialAvaliable = true;
         }
+
+        if(playerSpecialAvaliable = true){
+            if(playerClass == 0){
+
+                    attackMonster();
+                }
+            }
+            if(playerClass == 1){
+                shieldPower = 1000;
+                if(countDeadMonsters() == 0){
+                    
+                }
+            }
+            if(playerClass == 2){
+                for(int i = 0; i < 3; i++){
+                    playerHealth = 100000;
+                    attackMonster();
+                }
+                playerHealth = 100;
+            }
+            if(playerClass == 3){
+                for(int i = 0; i < 2; i++){
+                    speedsters.speed() = 0;
+                }
+            }
+        }
+
+
+
         playerSpecialAvaliable = false;
     }
     
@@ -359,6 +391,13 @@ public class Game{
         return count;
     }
     
+    private ArrayList<Monster> aliveMonsters(){
+        ArrayList<Monster> living = new ArrayList<>();
+        for(Monster alive : monsters){
+            if(alive.health() > 0) living.add(alive);
+        }
+        return living;
+    }
 
     //Monsters with a special
     private ArrayList<Monster> getSpecialMonsters(){
@@ -401,13 +440,6 @@ public class Game{
         }
         if (alive.isEmpty()) return null;
         return alive.get((int)(Math.random() * alive.size()));
-    }
-    
-
-    private void specialProgress() {
-        gui.updateInventory(inventory);
-        gui.displayMessage(countDeadMonsters() + " / 3 kills till special");
-        return;
     }
 
 
