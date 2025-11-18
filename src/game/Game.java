@@ -1,33 +1,17 @@
 package game;
-import java.util.ArrayList;
 
+import java.util.ArrayList;
 import gui.MonsterBattleGUI;
 
 /**
  * Game - YOUR monster battle game!
- * 
- * Build your game here. Look at GameDemo.java for examples.
- * 
- * Steps:
- * 1. Fill in setupGame() - create monsters, items, set health
- * 2. Fill in the action methods - what happens when player acts?
- * 3. Customize the game loop if you want
- * 4. Add your own helper methods
- * 
- * Run this file to play YOUR game
  */
+public class Game {
 
-//TODO: name all the mosnters on spawn with adjectives, such as Strong Ghost or Evil Zombie
-//TODO: Add domain expansions/specials after getting a certain amount of kills, Infinite Void sets all speed to 0 and Malevolent Shrine hits every monster for reduced damage
-//TODO: Balance every stat for every class
-//TODO: If killed a monster leak the damage to the next one
-
-public class Game{
-    
     // The GUI
     private MonsterBattleGUI gui;
-    
-    // Game state - YOU manage these
+
+    // Game state
     private ArrayList<Monster> monsters;
     private Monster lastAttacked;
     private double shieldPower = 0.0;
@@ -37,93 +21,73 @@ public class Game{
     private int playerSpeed;
     private int playerDamage;
     private int playerHeal;
-    private boolean playerSpecialAvaliable = false;
+    private boolean playerSpecialAvailable = false;
+    private int specialKillCounter = 0;
     private int playerClass;
     private String chosenPlayerSpecial;
-    
-    /**
-     * Main method - start YOUR game!
-     */
+    private int playerSpecialTurnsLeft = 0; // used for multi-turn specials
+
     public static void main(String[] args) {
-        Game game = new Game(); // it instantiates a copy of this file. We're not running static
-        game.play(); // this extra step is unnecessary AI stuff
+        Game game = new Game();
+        game.play();
     }
-    
-    /**
-     * Play the game!
-     */
+
     public void play() {
         setupGame();
         gameLoop();
     }
-    
-    /**
-     * Setup - create the GUI and initial game state
-     * 
-     */
+
     private void setupGame() {
-        // Create the GUI
         gui = new MonsterBattleGUI("Monster Battle! Epic fights!");
 
-        // CHOOSE DIFFICULTY (number of monsters to face)
         int numMonsters = chooseDifficulty();
-         monsters = new ArrayList<>();
-        for(int k = 0; k < numMonsters; k++){
-            if(k == 0){
-                //add monster with special ability
-                monsters.add(new Monster("Vampire"));
+        monsters = new ArrayList<>();
+        for (int k = 0; k < numMonsters; k++) {
+            if (k == 0) {
+                monsters.add(new Monster("Syphon"));
+            } else if(k == 1){
+                monsters.add(new Monster("Murderous"));
+            } else if(k == 2){
+                monsters.add(new Monster("Armored"));
             } else {
                 monsters.add(new Monster());
             }
         }
         gui.updateMonsters(monsters);
-       
-        // PICK YOUR CHARACTER BUILD (using the 4 action buttons!)
+
         pickCharacterBuild();
-        
-        
-        
+
         inventory = new ArrayList<>();
-        // Add items here! Look at GameDemo.java for examples
         gui.updateInventory(inventory);
-        
-        String[] buttons = {"Attack (" + playerDamage + ")",
-                            "Defend (" + playerShield + ")",
-                            "Heal (" + playerHeal + ")",
-                            chosenPlayerSpecial + " "};
+        updateSpecialProgress();
+
+        String[] buttons = {
+            "Attack (" + playerDamage + ")",
+            "Defend (" + playerShield + ")",
+            "Heal (" + playerHeal + ")",
+            chosenPlayerSpecial
+        };
         gui.setActionButtons(buttons);
-        
-        // Welcome message
         gui.displayMessage("Battle Start! Choose your action.");
     }
-    
-    /**
-     * Main game loop
-     * 
-     * This controls the flow: player turn → monster turn → check game over
-     * You can modify this if you want!
-     */
-    private void gameLoop() {
-        // Keep playing while monsters alive and player alive
-        while (countLivingMonsters() > 0 && playerHealth > 0) {
-            shieldPower = 0; //start of turn, lower shield
 
-            // PLAYER'S TURN
+    private void gameLoop() {
+        while (countLivingMonsters() > 0 && playerHealth > 0) {
+            shieldPower = 0;
+
             gui.displayMessage("Your turn! HP: " + playerHealth);
-            int action = gui.waitForAction();  // Wait for button click (0-3)
+            int action = gui.waitForAction();
             handlePlayerAction(action);
             gui.updateMonsters(monsters);
             gui.pause(500);
-            
-            // MONSTER'S TURN (if any alive and player alive)
+
             if (countLivingMonsters() > 0 && playerHealth > 0) {
                 monsterAttack();
                 gui.updateMonsters(monsters);
                 gui.pause(500);
             }
         }
-        
-        // Game over!
+
         if (playerHealth <= 0) {
             gui.displayMessage("💀 DEFEAT! You have been defeated...");
         } else {
@@ -131,322 +95,313 @@ public class Game{
         }
     }
 
-
     private void pickCharacterBuild() {
-        // Set button labels to character classes
-        String[] characterClasses = {"Human Monster", "Heavenly Tank", "Gambler", "Limitless"};
+        String[] characterClasses = { "Human Monster", "Blessed Tank", "Gambler", "Limitless" };
         gui.setActionButtons(characterClasses);
-        
-        // Display choice prompt
         gui.displayMessage("---- PICK YOUR BUILD ----");
-        
-        // Wait for player to click a button (0-3)
         int choice = gui.waitForAction();
-        
-        // Initialize default stats
-        playerDamage = 200;
+
+        playerDamage = 100;
         playerShield = 50;
         playerHeal = 50;
         playerSpeed = 10;
         playerHealth = 100;
 
-        
-        // Customize stats based on character choice
         if (choice == 0) {
-            // Fighter: high damage, low healing and shield
             gui.displayMessage("You chose Human Monster! High damage.");
-            playerShield -= (int)(Math.random() * 20 + 1) + 5;  // Reduce shield by 5-25
-            playerHeal -= (int)(Math.random() * 20 + 1) + 5;   // Reduce heal by 5-25
-            playerSpeed -= (int)(Math.random() * 6) + 3;        // Calc speed 6-11
+            playerShield -= 30;
+            playerHeal = 50;
+            playerSpeed -= 5;
             chosenPlayerSpecial = "Malevolent Shrine";
             playerClass = 0;
         } else if (choice == 1) {
-            // Tank: high shield, low damage and speed
             gui.displayMessage("You chose Heavenly Tank! Tough defense.");
-            playerSpeed -= (int)(Math.random() * 9) + 1;        // Reduce speed by 1-9
-            playerDamage -= (int)(Math.random() * 20 + 1) + 5;   // Reduce damage by 5-25
-            playerSpeed -= (int)(Math.random() * 9) + 1;        // Calc speed 6-11
+            playerSpeed -= 7;
+            playerDamage -= 110;
+            playerHealth += 30;
             chosenPlayerSpecial = "Heavenly Restriction";
             playerClass = 1;
         } else if (choice == 2) {
-            // Healer: high healing, low damage and shield
             gui.displayMessage("You chose Gambler! Great heal.");
-            playerDamage -= (int)(Math.random() * 21) + 5;      // Reduce damage by 5-25
-            playerShield -= (int)(Math.random() * 21) + 5;      // Reduce shield by 5-25
-            playerSpeed -= (int)(Math.random() * 10) + 1;        // Calc speed 6-11
+            playerDamage -= (int) (Math.random() * 21) + 5;
+            playerShield -= 30;
+            playerSpeed -= 5;
             chosenPlayerSpecial = "Idle Death Gamble";
             playerClass = 2;
         } else {
-            // Ninja: high speed, low healing and health
             gui.displayMessage("You chose Limitless! Speedy.");
-            playerHeal -= (int)(Math.random() * 46) + 5;        // Reduce heal by 5-50
-            playerHealth -= (int)(Math.random() * 21) + 5;         // Reduce max health by 5-25
-            playerSpeed -= (int)(Math.random() * 6) + 6;        // Calc speed 6-11
+            playerHeal -= 10;
+            playerHealth -= 5;
+            playerSpeed -= (int) (Math.random() * 6) + 6;
             chosenPlayerSpecial = "Infinite Void";
             playerClass = 3;
         }
-        if(playerHeal < 0) playerHeal = 0;
+
+        if (playerHeal < 0)
+            playerHeal = 0;
 
         gui.setPlayerMaxHealth(playerHealth);
         gui.updatePlayerHealth(playerHealth);
-        
-        // Pause to let player see their choice
         gui.pause(1500);
     }
-    
-    /**
-     * Let player choose difficulty (number of monsters) using the 4 buttons
-     * This demonstrates using the GUI for menu choices!
-     */
+
     private int chooseDifficulty() {
-        // Set button labels to difficulty levels
-        String[] difficulties = {"Third Rate", "Get Stronger", "Breaking a Sweat", "Honored One"};
+        String[] difficulties = { "Third Rate", "Get Stronger", "Breaking a Sweat", "Honored One" };
         gui.setActionButtons(difficulties);
-        
-        // Display choice prompt
         gui.displayMessage("---- CHOOSE DIFFICULTY ----");
-        
-        // Wait for player to click a button (0-3)
         int choice = gui.waitForAction();
         int numMonsters = 0;
-        switch(choice){
+        switch (choice) {
             case 0:
-                numMonsters = (int)(Math.random() * (4 - 2 + 1)) + 2;
+                numMonsters = (int) (Math.random() * 3) + 2;
                 break;
             case 1:
-                numMonsters = (int)(Math.random() * (5 - 4 + 1)) + 4;
+                numMonsters = (int) (Math.random() * 2) + 4;
                 break;
             case 2:
-                numMonsters = (int)(Math.random() * (8 - 6 + 1)) + 6;
+                numMonsters = (int) (Math.random() * 3) + 6;
                 break;
             case 3:
-                numMonsters = (int)(Math.random() * (15 - 10 + 1)) + 10;
+                numMonsters = (int) (Math.random() * 6) + 10;
                 break;
         }
-        
         gui.displayMessage("Judgment Chosen. " + difficulties[choice] + " difficulty selected.");
         gui.pause(1500);
-        
         return numMonsters;
     }
-    
-    /**
-     * Handle player's action choice
-     * 
-     */
+
     private void handlePlayerAction(int action) {
         switch (action) {
-            case 0: // Attack button
+            case 0:
                 attackMonster();
+                if (playerSpecialTurnsLeft > 0)
+                    playerSpecialTurnsLeft--;
+                if (playerSpecialTurnsLeft == 0 && chosenPlayerSpecial.equals("Idle Death Gamble")) {
+                    playerHealth = 100;
+                    gui.displayMessage("Gambler special ended! Health restored.");
+                }
+                if (playerSpecialTurnsLeft == 0 && chosenPlayerSpecial.equals("Infinite Void")) {
+                    for (Monster m : monsters) {
+                        m.setSpeed(m.getOriginalSpeed());
+                    }
+                }
                 break;
-            case 1: // Defend button
-                defend();
+            case 1:
+                if (playerShield > 100) {
+                    gui.displayMessage("You're literally invincible bro");
+                } else {
+                    defend();
+                }
+                if (playerSpecialTurnsLeft > 0)
+                    playerSpecialTurnsLeft--;
+                if (playerSpecialTurnsLeft == 0 && chosenPlayerSpecial.equals("Infinite Void")) {
+                    for (Monster m : monsters) {
+                        m.setSpeed(m.getOriginalSpeed());
+                    }
+                }
                 break;
-            case 2: // Heal button
-                heal();
+            case 2:
+                if (playerHealth >= 100) {
+                    gui.displayMessage("Already max health!");
+                } else {
+                    heal();
+                }
+                if (playerSpecialTurnsLeft > 0)
+                    playerSpecialTurnsLeft--;
+                if (playerSpecialTurnsLeft == 0 && chosenPlayerSpecial.equals("Infinite Void")) {
+                    for (Monster m : monsters) {
+                        m.setSpeed(m.getOriginalSpeed());
+                    }
+                }
                 break;
-            case 3: // Special button
+            case 3:
                 useSpecial();
                 break;
         }
     }
-    
-    
-    /**
-     * Attack a monster
-     * 
-     * - How much damage?
-     * - Which monster gets hit?
-     * - Special effects?
-     */
+
     private void attackMonster() {
         Monster target = getRandomLivingMonster();
         lastAttacked = target;
-        int damage = (int)(Math.random() * playerDamage + 1); // 0 - playerDamage
-        if(damage == 0){
-            //hurt yourself
+        int damage = (int) (Math.random() * playerDamage + 1);
+        
+        
+        //CRITICAL MISS!
+        if (damage == 0) {
             playerHealth -= 5;
             gui.displayMessage("Critical MISS! You hit yourself!");
             gui.updatePlayerHealth(playerHealth);
-        } else if(damage == playerDamage){
+
+            //CRITICAL HIT! INSTAKILL
+        } else if (damage == playerDamage){
             gui.displayMessage("Critical HIT! You INSTAkilled the monster!");
             target.takeDamage(target.health());
         } else {
-          target.takeDamage(damage); 
-          gui.displayMessage("You hit the monster for " + damage + " damage"); 
+            //ARMORED MONSTER SPECIAL
+            if(target.special().equals("Armored")){
+                //25% damage reduction due to hardened skin!
+                target.takeDamage((int)(damage * 0.75));
+                gui.displayMessage("Armored Monsters take only 75% damage!");
+            } else {
+                target.takeDamage(damage);
+                gui.displayMessage("You hit the monster for " + damage + " damage!");
+            }
         }
-        // Show which one we hit
-        int index = monsters.indexOf(target);
-        gui.highlightMonster(index);
+        if (target.health() <= 0) {
+            specialKillCounter++;
+            if (specialKillCounter > 3)
+                specialKillCounter = 3;
+            updateSpecialProgress();
+        }
+        gui.highlightMonster(monsters.indexOf(target));
         gui.pause(300);
         gui.highlightMonster(-1);
-        //update the list
         gui.updateMonsters(monsters);
     }
-    /**
-     * Defend
-     * 
-     * - Reduce damage?
-     * - Block next attack?
-     * - Something else?
-     */
+
     private void defend() {
         shieldPower = playerShield;
         gui.displayMessage("Shield raise!");
     }
-    
 
-     // Heal yourself
     private void heal() {
         playerHealth += playerHeal;
         gui.updatePlayerHealth(playerHealth);
         gui.displayMessage("You healed for " + playerHeal + " health");
     }
-    
-    /**
-     * Use special ability - each class has unique ability
-     */
-    private void useSpecial(){
-        if(countDeadMonsters() >= 3) {  //unlock special after 3 kills
-            playerSpecialAvaliable = true;
-        }
 
-        if(playerSpecialAvaliable = true){
-            if(playerClass == 0){
-
-                    attackMonster();
-                }
-            }
-            if(playerClass == 1){
-                shieldPower = 1000;
-                if(countDeadMonsters() == 0){
-                    
-                }
-            }
-            if(playerClass == 2){
-                for(int i = 0; i < 3; i++){
-                    playerHealth = 100000;
-                    attackMonster();
-                }
-                playerHealth = 100;
-            }
-            if(playerClass == 3){
-                for(int i = 0; i < 2; i++){
-                    speedsters.speed() = 0;
-                }
-            }
-        }
-
-
-
-        playerSpecialAvaliable = false;
+    private void updateSpecialProgress() {
+        inventory.clear();
+        inventory.add(new Item("Kills: " + specialKillCounter + " / 3", "⭐", null));
+        gui.updateInventory(inventory);
     }
-    
-    /**
-     * Monster attacks player
-     * 
-     * - How much damage?
-     * - Which monster attacks?
-     * - Special abilities?
-     */
-    private void monsterAttack() {
-        // build a list of every mosnter that gets to attack player
-        ArrayList<Monster> attackers = getSpeedyMonsters();
-        if(lastAttacked != null && lastAttacked.health() > 0 && !attackers.contains(lastAttacked)){
-            attackers.add(lastAttacked);
+
+    private void useSpecial() {
+        if (countDeadMonsters() >= 3) {
+            playerSpecialAvailable = true;
+        } else {
+            gui.displayMessage("Need more blood! Kills: " + specialKillCounter + " / 3");
+            return;
         }
 
-        for(Monster m : attackers){
-            double incomingDamage = m.damage();
-            if(shieldPower > incomingDamage){
-                double absorbedDamage = incomingDamage;
-                shieldPower -= absorbedDamage;
-                gui.displayMessage("You TANKED " + absorbedDamage + " damage");
-            } else if(incomingDamage > shieldPower){
-                double takenDamage = Math.abs(shieldPower - incomingDamage);
-                playerHealth -= takenDamage;
-                gui.displayMessage("You took " + takenDamage + " damage you bum");
+        switch (playerClass) {
+            case 0:
+                gui.displayMessage("Malevolent Shrine hits all monsters for 1 hit!");
+                for (Monster m : monsters)
+                    if (m.health() > 0)
+                        m.takeDamage(playerDamage / 2);
+                break;
+            case 1:
+                gui.displayMessage("Heavenly Restriction active!");
+                shieldPower = 9999;
+                playerSpecialTurnsLeft = 2;
+                break;
+            case 2:
+                gui.displayMessage("Idle Death Gamble active!");
+                playerSpecialTurnsLeft = 3;
+                playerHealth = 9999;
+                break;
+            case 3:
+                gui.displayMessage("Infinite Void freezes all monsters!");
+                playerSpecialTurnsLeft = 3;
+                for (Monster m : monsters) {
+                    m.setOriginalSpeed(m.speed());
+                    m.setSpeed(0);
+                }
+                break;
+        }
+        specialKillCounter = 0;
+        updateSpecialProgress();
+        playerSpecialAvailable = false;
+    }
+
+    private void monsterAttack() {
+        ArrayList<Monster> attackers = getSpeedyMonsters();
+        ArrayList<Monster> cantAttack = getFrozenMonsters();
+        if (lastAttacked != null && lastAttacked.health() > 0 && !attackers.contains(lastAttacked) && cantAttack.contains(lastAttacked))
+            attackers.add(lastAttacked);
+
+        for (Monster m : attackers) {
+            int incomingDamage = (int)(Math.random() * m.damage()+ 1);
+            
+            
+            //SPECIAL MONSTER TYPES
+
+            //SPECIAL TYPE 1 - SYPHON HEALS ITSELF ON HIT FOR HALF THE DAMAGE IT DELT
+            if(m.special().equals("Syphon")){
+                m.takeDamage(-incomingDamage / 2);
+                gui.displayMessage("The syphon healed itself while hitting you!");
+            }
+            
+            //SPECIAL TYPE 2 - MURDEROUS DEALS 50% MORE DAMAGE PER HIT
+            if(m.special().equals("Murderous")){
+                incomingDamage = (int)(m.damage() * 1.5); 
+            }
+
+            if (shieldPower == 9999) {
+                int dmg = (int) m.damage();
+                int reflected = dmg / 2;
+                m.takeDamage(reflected);
+                gui.displayMessage("Heavenly Restriction deflects " + reflected + " damage back!");
+                incomingDamage = 0;
+            }
+            if (shieldPower > incomingDamage) {
+                shieldPower -= incomingDamage;
+                gui.displayMessage("You TANKED " + incomingDamage + " damage");
+            } else if (incomingDamage > shieldPower) {
+                double taken = incomingDamage - shieldPower;
+                playerHealth -= taken;
+                gui.displayMessage("You took " + taken + " damage");
             }
             gui.updatePlayerHealth(playerHealth);
-
-            // Show which one that hit us
-            int index = monsters.indexOf(m);
-            gui.highlightMonster(index);
+            gui.highlightMonster(monsters.indexOf(m));
             gui.pause(300);
             gui.highlightMonster(-1);
         }
     }
-    
-    // ==================== HELPER METHODS ====================
-    // Add your own helper methods here!
-    
-    /**
-     * Count how many monsters are still alive
-     */
+
+    //  HELPERS 
+
     private int countLivingMonsters() {
         int count = 0;
-        for (Monster m : monsters) {
-            if (m.health() > 0) count++;
-        }
+        for (Monster m : monsters)
+            if (m.health() > 0)
+                count++;
         return count;
     }
-    
-    private ArrayList<Monster> aliveMonsters(){
-        ArrayList<Monster> living = new ArrayList<>();
-        for(Monster alive : monsters){
-            if(alive.health() > 0) living.add(alive);
-        }
-        return living;
-    }
 
-    //Monsters with a special
-    private ArrayList<Monster> getSpecialMonsters(){
-        ArrayList<Monster> result = new ArrayList<>();
-        for(Monster m : monsters){
-            if(m.special() != null && !m.special().equals("") && m.health() > 0){
-                result.add(m);
-            }
-        }
-        return result;
-    }
-
-    // Count dead monsters
-    private int countDeadMonsters(){
+    private int countDeadMonsters() {
         int count = 0;
-        for(Monster m : monsters){
-            if(m.health() < 0) count++;
-        }
+        for (Monster m : monsters)
+            if (m.health() <= 0)
+                count++;
         return count;
-    } 
+    }
 
-
-    //Monsters with greater speed than player
-    private ArrayList<Monster> getSpeedyMonsters(){
+    private ArrayList<Monster> getSpeedyMonsters() {
         ArrayList<Monster> speedsters = new ArrayList<>();
-        for(Monster m : monsters){
-            if(m.speed() > playerSpeed && m.health() > 0){
+        for (Monster m : monsters)
+            if (m.speed() > playerSpeed && m.health() > 0 && m.speed() != 0)
                 speedsters.add(m);
-            }
-        }
         return speedsters;
     }
-    /**
-     * Get a random living monster
-     */
-    private Monster getRandomLivingMonster() {
-        ArrayList<Monster> alive = new ArrayList<>();
-        for (Monster m : monsters) {
-            if (m.health() > 0) alive.add(m);
+
+    private ArrayList<Monster> getFrozenMonsters(){
+        ArrayList<Monster> voidsters = new ArrayList<>();
+        for(Monster m : monsters){
+            if(m.speed() == 0) voidsters.add(m);
         }
-        if (alive.isEmpty()) return null;
-        return alive.get((int)(Math.random() * alive.size()));
+        return voidsters;
     }
 
 
-    // Make more helper methods if needed
-    // Examples:
-    // - Method to find the strongest monster
-    // - Method to check if player has a specific item
-    // - Method to add special effects
-    // - etc.
+    private Monster getRandomLivingMonster() {
+        ArrayList<Monster> alive = new ArrayList<>();
+        for (Monster m : monsters)
+            if (m.health() > 0)
+                alive.add(m);
+        if (alive.isEmpty())
+            return null;
+        return alive.get((int) (Math.random() * alive.size()));
+    }
 }
