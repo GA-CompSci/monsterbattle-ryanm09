@@ -149,8 +149,8 @@ public class MonsterDisplayPanel extends JPanel {
             speedLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
             
             // Special ability if exists
-            if (!monster.special().isEmpty()) {
-                JLabel specialLabel = new JLabel("★ " + monster.special());
+            if (!monster.specialType().isEmpty()) {
+                JLabel specialLabel = new JLabel("★ " + monster.specialType());
                 specialLabel.setForeground(new Color(255, 215, 0));
                 specialLabel.setFont(new Font("Arial", Font.ITALIC, 11));
                 specialLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
