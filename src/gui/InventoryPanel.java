@@ -32,7 +32,7 @@ public class InventoryPanel extends JPanel {
         setBackground(PANEL_BG);
         
         // Title
-        JLabel titleLabel = new JLabel("INVENTORY", SwingConstants.CENTER);
+        JLabel titleLabel = new JLabel("SPECIAL PROGRESS", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
         titleLabel.setForeground(Color.CYAN);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 5));
@@ -86,7 +86,7 @@ public class InventoryPanel extends JPanel {
      * Show empty inventory message
      */
     private void showEmptyMessage() {
-        JLabel emptyLabel = new JLabel("No items", SwingConstants.CENTER);
+        JLabel emptyLabel = new JLabel("Start Game to see progess.", SwingConstants.CENTER);
         emptyLabel.setFont(ITEM_FONT);
         emptyLabel.setForeground(Color.GRAY);
         emptyLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -122,7 +122,7 @@ public class InventoryPanel extends JPanel {
         panel.add(nameLabel, BorderLayout.CENTER);
         
         // Item index/slot number
-        JLabel indexLabel = new JLabel("[" + index + "]");
+        JLabel indexLabel = new JLabel("⭐");
         indexLabel.setFont(new Font("Arial", Font.BOLD, 12));
         indexLabel.setForeground(Color.CYAN);
         panel.add(indexLabel, BorderLayout.EAST);
